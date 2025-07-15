@@ -11,7 +11,7 @@ Simple UI: A clean and minimal interface built with Java Swing.
 # How to Run the Game
 You'll need to have the Java Development Kit (JDK) installed on your computer.
 
-Download the Code: Download all the .java files into a single folder on your computer.
+Download the Code: Download the .java files into a single folder on your computer.
 
 Open a Terminal: Navigate to the folder where you saved the files using your command line or terminal.
 
