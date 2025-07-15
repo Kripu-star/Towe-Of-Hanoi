@@ -1,1 +1,1 @@
-# Towe-Of-Hanoi
+# Tower-Of-Hanoi
