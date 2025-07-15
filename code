@@ -1,0 +1,189 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Stack;
+
+public class TowerOfHanoi extends JFrame {
+    private static final int NUM_RODS = 3;
+    private int numDisks; 
+    private ArrayList<Stack<Integer>> rods;
+    private int moveCount = 0;
+    private JLabel moveLabel;
+    private GamePanel gamePanel;
+    private Integer draggingDisk = null;
+    private int draggingFromRod = -1;
+    private Point dragOffset = null;
+    private Point dragLocation = null;
+
+    public TowerOfHanoi(int numDisks) {
+        this.numDisks = numDisks;
+        setTitle("Tower of Hanoi");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(600, 400);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        rods = new ArrayList<>();
+        for (int i = 0; i < NUM_RODS; i++) {
+            rods.add(new Stack<>());
+        }
+        for (int i = numDisks; i >= 1; i--) {
+            rods.get(0).push(i);
+        }
+
+        moveLabel = new JLabel("Moves: 0");
+        add(moveLabel, BorderLayout.NORTH);
+
+        gamePanel = new GamePanel();
+        add(gamePanel, BorderLayout.CENTER);
+    }
+
+    private class GamePanel extends JPanel {
+        private final int ROD_WIDTH = 16;
+        private final int ROD_HEIGHT = 280;
+        private final int DISK_HEIGHT = 24;
+        private final int BASE_Y = 300;
+        private final int[] rodX = {120, 300, 480};
+
+        public GamePanel() {
+            setBackground(new Color(240, 240, 255));
+            setPreferredSize(new Dimension(1000, 850));
+
+            MouseAdapter mouseAdapter = new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    for (int r = 0; r < NUM_RODS; r++) {
+                        if (!rods.get(r).isEmpty()) {
+                            Rectangle diskRect = getDiskRect(r, rods.get(r).size() - 1, rods.get(r).peek());
+                            if (diskRect.contains(e.getPoint())) {
+                                draggingDisk = rods.get(r).peek();
+                                draggingFromRod = r;
+                                dragOffset = new Point(e.getX() - diskRect.x, e.getY() - diskRect.y);
+                                dragLocation = e.getPoint();
+                                repaint();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    if (draggingDisk != null) {
+                        dragLocation = e.getPoint();
+                        repaint();
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if (draggingDisk != null) {
+                        int toRod = getRodAtPoint(e.getPoint());
+                        if (toRod != -1 && isLegalMove(draggingFromRod, toRod)) {
+                            rods.get(draggingFromRod).pop();
+                            rods.get(toRod).push(draggingDisk);
+                            moveCount++;
+                            moveLabel.setText("Moves: " + moveCount);
+                            if (rods.get(2).size() == numDisks) {
+                                JOptionPane.showMessageDialog(TowerOfHanoi.this, "You Win!", "Congratulations", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }
+                        draggingDisk = null;
+                        draggingFromRod = -1;
+                        dragOffset = null;
+                        dragLocation = null;
+                        repaint();
+                    }
+                }
+            };
+            addMouseListener(mouseAdapter);
+            addMouseMotionListener(mouseAdapter);
+        }
+
+        private int getRodAtPoint(Point p) {
+            for (int r = 0; r < NUM_RODS; r++) {
+                int x = rodX[r] - ROD_WIDTH / 2;
+                if (p.x >= x && p.x <= x + ROD_WIDTH) {
+                    return r;
+                }
+            }
+            return -1;
+        }
+
+        private boolean isLegalMove(int from, int to) {
+            if (from == to) return false;
+            if (rods.get(from).isEmpty()) return false;
+            int disk = rods.get(from).peek();
+            if (rods.get(to).isEmpty()) return true;
+            return disk < rods.get(to).peek();
+        }
+
+        private Rectangle getDiskRect(int rod, int pos, int diskSize) {
+            int width = 40 + diskSize * 24;
+            int x = rodX[rod] - width / 2;
+            int y = BASE_Y - (pos + 1) * DISK_HEIGHT;
+            return new Rectangle(x, y, width, DISK_HEIGHT);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g2.setColor(new Color(120, 80, 40));
+            for (int r = 0; r < NUM_RODS; r++) {
+                g2.fillRect(rodX[r] - ROD_WIDTH / 2, BASE_Y - ROD_HEIGHT, ROD_WIDTH, ROD_HEIGHT);
+            }
+            g2.fillRect(60, BASE_Y, 480, 16);
+
+            for (int r = 0; r < NUM_RODS; r++) {
+                Stack<Integer> rod = rods.get(r);
+                for (int d = 0; d < rod.size(); d++) {
+                    int disk = rod.get(d);
+                    if (draggingDisk != null && draggingFromRod == r && d == rod.size() - 1) continue;
+                    Rectangle rect = getDiskRect(r, d, disk);
+                    drawDisk(g2, rect, disk);
+                }
+            }
+            
+            if (draggingDisk != null && dragLocation != null && dragOffset != null) {
+                int width = 40 + draggingDisk * 24;
+                int x = dragLocation.x - dragOffset.x;
+                int y = dragLocation.y - dragOffset.y;
+                Rectangle rect = new Rectangle(x, y, width, DISK_HEIGHT);
+                drawDisk(g2, rect, draggingDisk);
+            }
+        }
+
+        private void drawDisk(Graphics2D g2, Rectangle rect, int diskSize) {
+            Color[] colors = {new Color(255, 128, 128), new Color(128, 255, 128), new Color(128, 128, 255), new Color(255, 255, 128), new Color(255, 128, 255), new Color(128, 255, 255)};
+            g2.setColor(colors[(diskSize - 1) % colors.length]);
+            g2.fillRoundRect(rect.x, rect.y, rect.width, rect.height, 16, 16);
+            g2.setColor(Color.DARK_GRAY);
+            g2.drawRoundRect(rect.x, rect.y, rect.width, rect.height, 16, 16);
+            g2.setColor(Color.BLACK);
+            g2.setFont(new Font("Arial", Font.BOLD, 16));
+            String label = String.valueOf(diskSize);
+            FontMetrics fm = g2.getFontMetrics();
+            int tx = rect.x + (rect.width - fm.stringWidth(label)) / 2;
+            int ty = rect.y + (rect.height + fm.getAscent()) / 2 - 4;
+            g2.drawString(label, tx, ty);
+        }
+    }
+      public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            int numDisks = 4;
+            String input = JOptionPane.showInputDialog(null, "Enter number of disks (1-12 recommended):", "Tower of Hanoi", JOptionPane.QUESTION_MESSAGE);
+            if (input != null) {
+                try {
+                    int val = Integer.parseInt(input.trim());
+                    if (val >= 1 && val <= 12) numDisks = val;
+                } catch (NumberFormatException ignored) {}
+            }
+            TowerOfHanoi frame = new TowerOfHanoi(numDisks);
+            frame.setVisible(true);
+        });
+    }
+} 
