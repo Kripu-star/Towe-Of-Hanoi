@@ -28,7 +28,7 @@ java MainGameFile
 The game window should now appear!
 
 # How to Play
-The goal is to move the entire stack of disks from the starting rod to the destination rod (usually the last one).
+The goal is to move the entire stack of disks from the starting rod to the destination rod .
 
 You must follow two simple rules:
 
